@@ -1,0 +1,10 @@
+name = mp_common
+description = MyPatch Common - Common functions to work with remote content
+core = 7.x
+package = Patch MP
+version = 7.x-3.0
+configure = admin/config/mp_common
+dependencies[] = s3fs
+files[] = includes/mp_common.stream_wrapper.inc
+project = mp_common
+project status url = http://dev-patch-jp.pantheon.io/release-history
