@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Drupal hooks that allow the MyPatch instance to work with remote content.
+ */
+
+module_load_include('inc', 'mp_common', 'includes/mp_common.images');
+
+/**
+ * Implements hook_stream_wrappers_alter().
+ *
+ * Overrides default implementation of the S3 file wrapper to prevent writing
+ * to the local db.
+ *
+ * @see includes/mp_common.stream_wrapper.inc
+ */
+function mp_common_stream_wrappers_alter(&$wrappers) {
+
+    $wrappers['s3']['class'] = 'MpS3fsStreamWrapper';
+}
+
+/**
+ * Implements hook_element_info_alter().
+ *
+ * Allows us to render unmanaged image files (not in our local db) stored in S3
+ * on node-edit forms.
+ *
+ * @see includes/mp_common.images.inc
+ */
+function mp_common_element_info_alter(&$type) {
+
+    if (isset($type['managed_file']['#process'])) {
+
+        $element = &$type['managed_file']['#process'];
+        $index = array_search('file_managed_file_process', $element);
+        $element[$index] = 'mp_common_s3_file_process';
+
+        $element = &$type['managed_file']['#pre_render'];
+        $index = array_search('file_managed_file_pre_render', $element);
+        $element[$index] = 'mp_common_s3_file_pre_render';
+
+        $element = &$type['managed_file']['#element_validate'];
+        $index = array_search('file_managed_file_validate', $element);
+        $element[$index] = 'mp_common_s3_file_validate';
+    }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ *
+ * Used to set the path of images uploaded to S3 and change the image field's
+ * label.
+ *
+ * @see includes/mp_common.images.inc
+ */
+function mp_common_field_widget_form_alter(&$element, &$form_state, $context) {
+
+    // If this is an image field type of instance 'field_image_asset'
+    if ($context['field']['field_name'] == 'field_image_asset') {
+        // Loop through the element children (there will always be at least one)
+        foreach (element_children($element) as $key => $child) {
+
+            // Override the managed_file element's #value_callback which was already
+            // overridden in file_field_widget_form()
+            $element[$key]['#value_callback'] = 'mp_common_s3_file_field_widget_value';
+
+            // Add the new process function to the element
+            $element[$key]['#process'][] = 'mp_common_image_field_widget_process';
+        }
+    }
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * Overrides default theming functions for image files to hide info that is not
+ * available when they are unmanaged (hosted on S3).
+ *
+ * @see includes/mp_common.images.inc
+ */
+function mp_common_theme() {
+
+    return array(
+        'image_widget' => array(
+            'function' => 'mp_common_theme_image_widget',
+            'render element' => 'element',
+        ),
+        'file_link' => array(
+            'function' => 'mp_common_theme_file_link',
+            'variables' => array('file' => NULL, 'icon_directory' => NULL),
+        ),
+    );
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Alters the callback used to display thumbnails of images uploaded during edit.
+ *
+ * @see includes/mp_common.images.inc
+ */
+function mp_common_menu_alter(&$items) {
+
+    $items['s3/files/styles/%image_style']['page callback'] = 'mp_common_image_style_deliver';
+}
