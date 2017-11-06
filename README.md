@@ -8,8 +8,8 @@ Using hooks and class overrides, I was able to exploit quirks in the way that dr
 
 This sample is a subset of code from a shared module containing several functions common to a constellation of Drupal installs. The solution is implemented in four files: 
 ```
-sites/all/modules/custom/mp_common/mp_common.info
-sites/all/modules/custom/mp_common/mp_common.module
-sites/all/modules/custom/mp_common/includes/mp_common.images.inc
-sites/all/modules/custom/mp_common/includes/mp_common.stream_wrapper.inc
+mp_common.info
+mp_common.module
+includes/mp_common.images.inc
+includes/mp_common.stream_wrapper.inc
 ```
